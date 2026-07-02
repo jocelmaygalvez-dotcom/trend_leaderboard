@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trend Matrix: The 1000-Word Supabase Connected Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #060913;
+            --panel: #0d1527;
+            --accent: #00f2fe;
+            --accent-glow: rgba(0, 242, 254, 0.25);
+            --text: #cbd5e1;
+            --text-bright: #ffffff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--panel);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .title-area h1 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 1.6rem;
+            letter-spacing: 3px;
+            text-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .telemetry-deck {
+            display: flex;
+            gap: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .metric {
+            background: var(--panel);
+            padding: 8px 14px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #timer { color: var(--warning); }
+        #counter { color: var(--success); }
+        #live-score { color: var(--accent); }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 0.6fr;
+            gap: 15px;
+            max-width: 1400px;
+            width: 100%;
+            height: 78vh;
+        }
+
+        .workspace {
+            background: var(--panel);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .workspace h2 {
+            margin-top: 0;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            color: var(--accent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .text-stream {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 10px;
+            line-height: 1.8;
+            font-size: 0.9rem;
+            text-align: justify;
+        }
+
+        .word-node {
+            display: inline-block;
+            margin-right: 5px;
+            opacity: 0.15;
+            color: #475569;
+        }
+
+        .word-node.unlocked {
+            opacity: 1;
+            color: var(--text-bright);
+            font-weight: bold;
+        }
+
+        .word-node.current-target {
+            background: rgba(0, 242, 254, 0.15);
+            border-bottom: 2px dashed var(--accent);
+            opacity: 0.5;
+        }
+
+        #canvas-frame { padding: 0; overflow: hidden; background: #03060e; }
+        canvas { width: 100%; height: 100%; }
+
+        #token-field {
+            position: absolute;
+            top: 50px; left: 10px; right: 10px; bottom: 10px;
+            pointer-events: none;
+        }
+
+        .interactive-token {
+            position: absolute;
+            background: rgba(13, 21, 39, 0.9);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto;
+            border-radius: 2px;
+            white-space: nowrap;
+        }
+
+        /* Leaderboard styling */
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+            font-size: 0.85rem;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .leaderboard-item:nth-child(1) { color: #f59e0b; }
+
+        /* Form Controls overlay */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(3, 6, 14, 0.97);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .overlay input {
+            background: #131c2e; border: 1px solid var(--accent);
+            color: #fff; padding: 10px; font-family: monospace;
+            font-size: 1.1rem; width: 280px; text-align: center; margin-bottom: 15px;
+        }
+
+        .overlay button {
+            background: transparent; border: 2px solid var(--accent);
+            color: var(--accent); padding: 12px 30px; font-weight: bold;
+            cursor: pointer; font-family: monospace;
+        }
+
+        .overlay button:hover { background: var(--accent); color: var(--bg); }
+    </style>
+</head>
+<body>
+
+<div id="start-screen" class="overlay">
+    <h2>TREND MATRIX INITIALIZATION</h2>
+    <p style="max-width:500px; margin-bottom:20px; line-height:1.5;">Enter identity metrics to log real-time monitored metrics directly to Supabase cloud logs.</p>
+    <input type="text" id="username-field" placeholder="PLAYER_NAME" maxlength="15" autocomplete="off">
+    <button onclick="validateAndStart()">INITIALIZE PROTOCOL</button>
+</div>
+
+<div id="end-screen" class="overlay" style="display:none;">
+    <h2 id="end-title">DATA COMPILATION CONCLUDED</h2>
+    <p id="end-msg"></p>
+    <button onclick="location.reload()">RE-INITIALIZE SYSTEMS</button>
+</div>
+
+<header>
+    <div class="title-area">
+        <h1>TREND MATRIX DECK v5.0</h1>
+    </div>
+    <div class="telemetry-deck">
+        <div class="metric">PLAYER: <span id="display-name">---</span></div>
+        <div class="metric">SCORE: <span id="live-score">0000</span></div>
+        <div class="metric">TIME: <span id="timer">15:00</span></div>
+        <div class="metric">SYNTAX: <span id="counter">0/1000</span></div>
+    </div>
+</header>
+
+<div class="game-grid">
+    <div class="workspace">
+        <h2>MANIFEST COMPILATION DECK</h2>
+        <div class="text-stream" id="stream-output"></div>
+    </div>
+
+    <div class="workspace" id="canvas-frame">
+        <h2>VECTOR DECK INTERACTION SPACE</h2>
+        <canvas id="matrixCanvas"></canvas>
+        <div id="token-field"></div>
+    </div>
+
+    <div class="workspace">
+        <h2>LIVE SUPABASE LEADERBOARD</h2>
+        <ul class="leaderboard-list" id="leaderboard-anchor">
+            <li class="leaderboard-item">Loading synced database records...</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // --- SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = "YOUR_SUPABASE_URL"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qb2lteWN0YWZhcHVsZnptb3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjgzMjEsImV4cCI6MjA5ODU0NDMyMX0.ObsNASNMdhwT35Gfp2MGXIEoQHI_GoblueHmtw3WjUs";
+    const supabase = (SUPABASE_URL !== "https://ojoimyctafapulfzmovz.supabase.co") ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    // --- GAME ENGINE VARIABLES ---
+    const rawEssayText = "Phase_I:_The_Anatomy_of_Structural_Emergence. Modern trends represent the highly complex and dynamic intersection of quantitative data patterns human psychological behavior and macroscopic societal evolution. They are never isolated anomalies or random occurrences but are instead systemic transformations driven by fundamental collective human desires technological paradigm shifts and underlying structural momentum. To truly evaluate the origins of any major structural vector one must analyze how subtle micro-behaviors coalesce into macro-movements. This synthesis begins when isolated innovations interact with simmering social pressures creating an initial node of deviation. Historically these anomalies were discarded as marginal outliers by legacy institutions. However within network theory these nodes serve as early structural indicators of systemic shifts. As more decentralized actors flock toward the innovation a feedback loop activates causing localized behavior to scale exponentially. This scaling mechanism marks the transition from a fleeting fad to an enduring trend. Understanding this evolutionary trajectory requires an analytical mindset capable of recognizing patterns beneath structural noise. Observers must dismantle traditional analytical biases to track these patterns across disparate industrial silos. When technology accelerates cultural dissemination it shortens the latency between concept discovery and mainstream absorption. Consequently organizations that rely on backward-looking metrics find themselves perpetually reactive unable to intercept modern shifts before they redefine the competitive landscape entirely. True literacy requires recognizing that every trend contains structural markers including adoption velocity cultural resonance network density and infrastructure compatibility. By tracking these variables data analysts decode hidden signals establishing predictive models that forecast changes before they disrupt broader economic ecosystems. Phase_II:_The_Mechanics_of_Network_Dissemination. Information cascades through modern social structures using complex scale-free networks that maximize structural velocity while optimizing cross-platform visibility. In past decades structural updates drifted slowly across geographic borders filtered by traditional media gatekeepers. Today digital platforms eliminate friction allowing niche ideologies to transform into global cultural movements almost instantly. This rapid distribution depends on structural components known as super-nodes or influential tastemakers who bridge independent cultural clusters. When an emerging concept moves through a super-node it undergoes validation gaining social capital and mainstream legitimacy. This cross-pollination process creates cascading engagement patterns across demographics. The velocity of this movement is determined by cultural friction and structural alignment. If an idea matches collective anxieties or technological demands it encounters low resistance accelerating through digital channels. Conversely concepts that clash with structural paradigms face resistance requiring more energy to achieve mainstream adoption. During this acceleration phase tracking platforms measure sentiment analytics to quantify cultural velocity. Analysts map user engagement data to determine if a trend is scaling sustainably or burning out. Fleeting transformations spike rapidly but lack underlying infrastructure collapsing when novelty fades. Enduring trends build structural density growing consistently as they integrate into daily habits. This structural differentiation separates short-term visual fads from major structural transformations that reshape global commerce and consumer behavior. Phase_III:_The_Socioeconomic_Feedback_Loop. Once a structural pattern achieves mainstream validation it transitions from a passive cultural reflection into an active economic force. This phase triggers structural feedback loops where consumer behaviors rewrite industrial priorities and alter capital allocations. When capital markets witness sustained behavioral shifts they redirect investments toward infrastructure supporting the trend. This influx of capital accelerates research and development reducing entry barriers and inviting secondary competitors. As options multiply costs fall causing consumer adoption to surge further. This economic cycle explains how niche technological experiments transform into foundational global infrastructure. Consider how digital decentralization shifted from an abstract academic concept into a multi-billion-dollar financial market. This shift did not occur through random chance but followed structural laws governing technology implementation. As early adopters validated alternative consensus mechanisms they laid the foundation for enterprise applications. This structural pattern repeats across green energy automation and artificial intelligence models. Every major transition follows an identical path initialization validation capitalization institutionalization and standard setting. Navigating this environment demands continuous tracking and strategic agility. Thinkers must understand that trends are interconnected systems influencing one another. An accumulation in computing power directly drives capabilities in biotechnology while changing workforce demographics alter urban planning demands. Recognizing these intersections enables strategy experts to construct resilient long-term solutions. Phase_IV:_Predictive_Synthesis_and_Future_Architecture. The ultimate objective of trend analysis is not merely reacting to changes but developing predictive mastery to actively architect future outcomes. Organizations must transition from passive observation to proactive integration. This requires complex data processing engines that blend machine learning algorithms with anthropological research methods. Quantitative metrics show where a trend has been but qualitative tracking reveals where it will go next. When leaders combine these views they build dynamic strategies that survive disruption. As global systems grow interconnected the complexity of trend tracking increases. Solitary vectors now trigger complex secondary reactions across international borders. A regulatory update in one region can instantly alter supply chains and shift consumer habits worldwide. Managing this complexity requires continuous tracking and deep structural literacy. Leaders must separate superficial cultural expressions from the tectonic shifts driving them. Fads alter visual styling but structural trends reshape resource access and human capabilities. As we navigate an uncertain future tracking shifts becomes a vital survival skill. Those who cannot read structural vectors are condemned to react to consequences they failed to anticipate. Conversely those who master trend mechanics turn volatility into opportunity. They recognize that turbulence always precedes structural reorganization. By identifying emerging configurations early they position themselves as architects of the next economic era transforming abstract data streams into tangible human progress.";
+    const wordsArray = rawEssayText.split(" ");
+    const totalWords = wordsArray.length;
+
+    let currentIdx = 0;
+    let timeRemaining = 15 * 60; 
+    let playerScore = 0;
+    let playerName = "Anonymous";
+    let gameInterval;
+    let activeTokens = [];
+    let waveOffset = 0;
+
+    // DOM bindings
+    const streamOutput = document.getElementById('stream-output');
+    const tokenField = document.getElementById('token-field');
+    const timerDisplay = document.getElementById('timer');
+    const counterDisplay = document.getElementById('counter');
+    const scoreDisplay = document.getElementById('live-score');
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Build the structural 1000-word field
+    wordsArray.forEach((word, index) => {
+        const span = document.createElement('span');
+        span.innerText = word.replace(/_/g, " ") + " ";
+        span.className = 'word-node';
+        span.id = `node-${index}`;
+        streamOutput.appendChild(span);
+    });
+
+    class FloatingVector {
+        constructor(wordText, index) {
+            this.text = wordText;
+            this.index = index;
+            this.element = document.createElement('div');
+            this.element.className = 'interactive-token';
+            this.element.innerText = wordText.replace(/_/g, " ");
+            this.x = Math.random() * (tokenField.clientWidth - 110);
+            this.y = Math.random() * (tokenField.clientHeight - 40);
+            this.vx = (Math.random() - 0.5) * 2.0;
+            this.vy = (Math.random() - 0.5) * 2.0;
+            this.element.style.left = `${this.x}px`;
+            this.element.style.top = `${this.y}px`;
+            this.element.addEventListener('click', () => verifySelection(this));
+            tokenField.appendChild(this.element);
+        }
+        move() {
+            this.x += this.vx; this.y += this.vy;
+            if (this.x <= 0 || this.x >= tokenField.clientWidth - this.element.clientWidth) this.vx *= -1;
+            if (this.y <= 0 || this.y >= tokenField.clientHeight - this.element.clientHeight) this.vy *= -1;
+            this.element.style.left = `${this.x}px`; this.element.style.top = `${this.y}px`;
+        }
+        clear() { this.element.remove(); }
+    }
+
+    function syncPool() {
+        activeTokens = activeTokens.filter(t => { if(t.index < currentIdx){ t.clear(); return false; } return true; });
+        while(activeTokens.length < 8 && (currentIdx + activeTokens.length) < totalWords) {
+            let target = currentIdx + activeTokens.length;
+            if (Math.random() > 0.65) target = Math.min(totalWords - 1, target + Math.floor(Math.random() * 8));
+            if (!activeTokens.some(t => t.index === target)) {
+                activeTokens.push(new FloatingVector(wordsArray[target], target));
+            }
+        }
+    }
+
+    function verifySelection(tokenObj) {
+        if (tokenObj.index === currentIdx) {
+            document.getElementById(`node-${currentIdx}`).className = 'word-node unlocked';
+            if (currentIdx % 6 === 0) document.getElementById(`node-${currentIdx}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Score calculations + 10 points for a correct hit
+            currentIdx++;
+            playerScore += 10;
+            
+            scoreDisplay.innerText = playerScore.toString().padStart(4, '0');
+            counterDisplay.innerText = `${currentIdx}/${totalWords}`;
+            tokenObj.clear();
+            activeTokens = activeTokens.filter(t => t !== tokenObj);
+            
+            if (currentIdx >= totalWords) {
+                endGame(true);
+            } else {
+                document.getElementById(`node-${currentIdx}`).className = 'word-node current-target';
+                syncPool();
+            }
+        } else {
+            // Error penalty deduction (-5 score penalty, -5 seconds)
+            playerScore = Math.max(0, playerScore - 5);
+            timeRemaining = Math.max(0, timeRemaining - 5);
+            scoreDisplay.innerText = playerScore.toString().padStart(4, '0');
+            tokenObj.element.style.borderColor = 'var(--danger)';
+            setTimeout(() => { tokenObj.element.style.borderColor = 'var(--accent)'; }, 200);
+        }
+    }
+
+    function runClock() {
+        if(timeRemaining <= 0) { endGame(false); return; }
+        timeRemaining--;
+        let mins = Math.floor(timeRemaining / 60); let secs = timeRemaining % 60;
+        timerDisplay.innerText = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+    }
+
+    function renderGraphicsLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let completion = currentIdx / totalWords;
+        ctx.strokeStyle = 'rgba(0, 242, 254, 0.15)';
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+        
+        ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = completion > 0.7 ? 'var(--success)' : 'var(--accent)';
+        for (let x = 0; x < canvas.width; x++) {
+            let y = (canvas.height/2) + Math.sin(x*0.01 + waveOffset)*40*(1-completion);
+            if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        activeTokens.forEach(t => t.move());
+        waveOffset += 0.02;
+        requestAnimationFrame(renderGraphicsLoop);
+    }
+
+    function validateAndStart() {
+        const input = document.getElementById('username-field').value.trim();
+        if(!input) { alert("Identify verification phrase needed."); return; }
+        playerName = input;
+        document.getElementById('display-name').innerText = playerName;
+        document.getElementById('start-screen').style.display = 'none';
+        
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        document.getElementById(`node-${currentIdx}`).className = 'word-node current-target';
+        
+        syncPool();
+        gameInterval = setInterval(runClock, 1000);
+        renderGraphicsLoop();
+        fetchLeaderboard();
+    }
+
+    // --- SUPABASE DATA HANDLERS ---
+    async function fetchLeaderboard() {
+        if (!supabase) return;
+        const { data, error } = await supabase
+            .from('trend_leaderboard')
+            .select('*')
+            .order('score', { ascending: false })
+            .limit(10);
+
+        if (error) {
+            console.error("Error reading logs:", error);
+            return;
+        }
+
+        const anchor = document.getElementById('leaderboard-anchor');
+        anchor.innerHTML = "";
+        data.forEach((row, i) => {
+            const li = document.createElement('li');
+            li.className = 'leaderboard-item';
+            li.innerHTML = `<span>${i+1}. ${row.player_name}</span> <span>${row.score} PTS</span>`;
+            anchor.appendChild(li);
+        });
+    }
+
+    async function writeLeaderboardMetrics() {
+        if (!supabase) {
+            console.warn("Supabase not configured. Record ignored.");
+            return;
+        }
+        const { error } = await supabase
+            .from('trend_leaderboard')
+            .insert([{ 
+                player_name: playerName, 
+                score: playerScore, 
+                words_completed: currentIdx, 
+                time_left_seconds: timeRemaining 
+            }]);
+
+        if (error) console.error("Database write failure:", error);
+        else fetchLeaderboard();
+    }
+
+    function endGame(isWin) {
+        clearInterval(gameInterval);
+        document.getElementById('end-screen').style.display = 'flex';
+        document.getElementById('end-title').innerText = isWin ? "SIMULATION COMPLETED" : "TIMELINE FAULT";
+        document.getElementById('end-msg').innerText = `Final calculation achieved for ${playerName}: ${playerScore} Points compiled.`;
+        writeLeaderboardMetrics();
+    }
+</script>
+</body>
+</html>
