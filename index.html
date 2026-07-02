@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHS Trends Engine: Scaffolding Matrix</title>
+    <title>SHS Trends: Typing Matrix Engine</title>
     
     <link rel="stylesheet" href="style.css">
     
@@ -12,46 +12,58 @@
 <body>
 
 <div id="start-screen" class="overlay">
-    <h2>TREND MATRIX INITIALIZATION</h2>
-    <p style="max-width:500px; margin-bottom:20px; line-height:1.5;">Enter identity metrics to synchronize database tracking configurations securely.</p>
-    <input type="text" id="username-field" placeholder="PLAYER_NAME" maxlength="15" autocomplete="off">
-    <button onclick="validateAndStart()">INITIALIZE PROTOCOL</button>
+    <h2>TREND TYPING MATRIX INITIALIZATION</h2>
+    <p style="max-width:550px; margin-bottom:25px; line-height:1.6; color: #cbd5e1;">
+        Type the SHS core academic trend phrases correctly before the 15-minute timer hits zero. Speed, accuracy, and depth determine your final leaderboard tier placement.
+    </p>
+    <input type="text" id="username-field" placeholder="INPUT_PLAYER_TAG" maxlength="15" autocomplete="off">
+    <button onclick="validateAndStart()">ENGAGE PROTOCOL</button>
 </div>
 
 <div id="end-screen" class="overlay" style="display:none;">
     <h2 id="end-title">DATA COMPILATION CONCLUDED</h2>
-    <p id="end-msg"></p>
-    <button onclick="location.reload()">RE-INITIALIZE SYSTEMS</button>
+    <p id="end-msg" style="margin-bottom: 20px;"></p>
+    <button onclick="location.reload()">RE-INITIALIZE COGNITIVE MATRICES</button>
 </div>
 
 <header>
     <div class="title-area">
-        <h1>TREND MATRIX DECK v8.0</h1>
+        <h1>SHS TRENDS TYPING CORES v9.0</h1>
     </div>
     <div class="telemetry-deck">
-        <div class="metric">PLAYER: <span id="display-name">---</span></div>
+        <div class="metric">OPERATOR: <span id="display-name">---</span></div>
         <div class="metric">SCORE: <span id="live-score">0000</span></div>
-        <div class="metric">TIME: <span id="timer">15:00</span></div>
-        <div class="metric">SYNTAX: <span id="counter">0/0</span></div>
+        <div class="metric">TIME RUNNING: <span id="timer">15:00</span></div>
+        <div class="metric">DIFFICULTY LEVEL: <span id="counter">1/6</span></div>
     </div>
 </header>
 
 <div class="game-grid">
-    <div class="workspace">
-        <h2>MANIFEST COMPILATION DECK</h2>
-        <div class="text-stream" id="stream-output"></div>
+    <div class="workspace main-deck">
+        <div class="level-badge" id="difficulty-badge">TIER 1: BASIC CONCEPT</div>
+        
+        <div class="display-prompt" id="sentence-prompt">
+            </div>
+
+        <div class="input-container">
+            <input type="text" id="typing-deck" placeholder="Type the academic sentence exactly as written above..." autocomplete="off" disabled>
+            <div class="live-stats">
+                <span>ACCURACY: <b id="stat-accuracy">100%</b></span>
+                <span>SPEED: <b id="stat-wpm">0 WPM</b></span>
+            </div>
+        </div>
     </div>
 
-    <div class="workspace" id="canvas-frame">
-        <h2>VECTOR DECK INTERACTION SPACE</h2>
-        <canvas id="matrixCanvas"></canvas>
-        <div id="token-field"></div>
-    </div>
-
-    <div class="workspace">
+    <div class="workspace leaderboard-pane">
         <h2>LIVE SUPABASE LEADERBOARD</h2>
+        <div class="table-header">
+            <span>PLAYER</span>
+            <span>WPM</span>
+            <span>ACC</span>
+            <span>SCORE</span>
+        </div>
         <ul class="leaderboard-list" id="leaderboard-anchor">
-            <li class="leaderboard-item">Awakening Database Channels...</li>
+            <li class="leaderboard-item system-msg">Synchronizing high score arrays...</li>
         </ul>
     </div>
 </div>
