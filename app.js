@@ -1,13 +1,13 @@
 // ==========================================================
 // !!! ENTER YOUR UNIQUE PROJECT API METRICS HERE !!!
 // ==========================================================
-const SUPABASE_URL = "YOUR_SUPABASE_URL"; 
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://ojoimyctafapulfzmovz.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qb2lteWN0YWZhcHVsZnptb3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjgzMjEsImV4cCI6MjA5ODU0NDMyMX0.ObsNASNMdhwT35Gfp2MGXIEoQHI_GoblueHmtw3WjUs";
 
 let supabase = null;
 
 try {
-    if (SUPABASE_URL !== "YOUR_SUPABASE_URL" && typeof window.supabase !== 'undefined') {
+    if (SUPABASE_URL !== "https://ojoimyctafapulfzmovz.supabase.co" && typeof window.supabase !== 'undefined') {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 } catch(err) {
