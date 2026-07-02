@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trend Matrix: 1000-Word Production Deck</title>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.8/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<div id="start-screen" class="overlay">
+    <h2>TREND MATRIX INITIALIZATION</h2>
+    <p style="max-width:500px; margin-bottom:20px; line-height:1.5;">Enter identity metrics to synchronize database tracking configurations securely.</p>
+    <input type="text" id="username-field" placeholder="PLAYER_NAME" maxlength="15" autocomplete="off">
+    <button onclick="validateAndStart()">INITIALIZE PROTOCOL</button>
+</div>
+
+<div id="end-screen" class="overlay" style="display:none;">
+    <h2 id="end-title">DATA COMPILATION CONCLUDED</h2>
+    <p id="end-msg"></p>
+    <button onclick="location.reload()">RE-INITIALIZE SYSTEMS</button>
+</div>
+
+<header>
+    <div class="title-area">
+        <h1>TREND MATRIX DECK v7.0</h1>
+    </div>
+    <div class="telemetry-deck">
+        <div class="metric">PLAYER: <span id="display-name">---</span></div>
+        <div class="metric">SCORE: <span id="live-score">0000</span></div>
+        <div class="metric">TIME: <span id="timer">15:00</span></div>
+        <div class="metric">SYNTAX: <span id="counter">0/1000</span></div>
+    </div>
+</header>
+
+<div class="game-grid">
+    <div class="workspace">
+        <h2>MANIFEST COMPILATION DECK</h2>
+        <div class="text-stream" id="stream-output"></div>
+    </div>
+
+    <div class="workspace" id="canvas-frame">
+        <h2>VECTOR DECK INTERACTION SPACE</h2>
+        <canvas id="matrixCanvas"></canvas>
+        <div id="token-field"></div>
+    </div>
+
+    <div class="workspace">
+        <h2>LIVE SUPABASE LEADERBOARD</h2>
+        <ul class="leaderboard-list" id="leaderboard-anchor">
+            <li class="leaderboard-item">Awakening Database Channels...</li>
+        </ul>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
